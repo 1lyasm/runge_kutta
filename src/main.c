@@ -1,7 +1,17 @@
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 typedef enum { Debug, Normal, Error } Mode;
+
+static void debug(Mode mode, const char *fmt, ...) {
+    if (mode == Debug) {
+        va_list args;
+        va_start(args, fmt);
+        vprintf(fmt, args);
+        va_end(args);
+    }
+}
 
 static void fail(char *msg) {
     fprintf(stderr, "%s\n", msg);
@@ -24,18 +34,20 @@ static Mode initMode() {
     } else {
         fail("initMode: mode is in invalid state");
     }
+    debug(mode, "initMode: mode: %d\n", mode);
     return mode;
 }
 
-static int takeInt(char *msg) {
+static int takeInt(char *msg, Mode mode) {
     int inp;
     printf("%s", msg);
     scanf(" %d", &inp);
+    debug(mode, "takeInt: inp: %d\n", inp);
     return inp;
 }
 
 int main() {
     Mode mode = initMode();
-    int n = takeInt("Enter n: ");
+    int n = takeInt("Enter n: ", mode);
     return 0;
 }
