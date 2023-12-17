@@ -7,6 +7,7 @@ typedef enum { Debug, Normal, Error } Mode;
 typedef struct {
     int *coefs;
     int n;
+    double t;
 } De;
 
 static void debug(Mode mode, const char *fmt, ...) {
@@ -47,7 +48,6 @@ static Mode initMode() {
     } else {
         fail("initMode: mode is in invalid state");
     }
-    debug(mode, "initMode: mode: %d\n", mode);
     return mode;
 }
 
@@ -70,6 +70,8 @@ static De *initDe(Mode mode) {
     for (i = 0; i < de->n; ++i) {
         de->coefs[i] = takeInt(mode, "Enter coefficient %d: ", i);
     }
+    printf("Enter independent variable (t) value: ");
+    scanf(" %lf", &(de->t));
     return de;
 }
 
@@ -80,6 +82,7 @@ static void debugDe(De *de, Mode mode) {
     for (i = 0; i < de->n; ++i) {
         debug(mode, "\tcoefs[%d]: %d\n", i, de->coefs[i]);
     }
+    debug(mode, "\tt: %lf\n", de->t);
 }
 
 static void freeDe(De *de) {
