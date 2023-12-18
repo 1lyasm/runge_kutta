@@ -5,11 +5,16 @@
 
 typedef enum { Debug, Normal, ModeError } Mode;
 
-typedef enum { Sin, Cos, Log, Exp, Pol, FuncTError } FuncT;
+typedef enum { Sin, Cos, Log, Exp, Pol, FuncTError, FuncTNull } FuncT;
 
 typedef struct {
-    int *coefs;
-    FuncT *types;
+    double coef;
+    FuncT type;
+    double w;
+} Func;
+
+typedef struct {
+    Func *funcs;
     int n;
     double t;
 } De;
@@ -66,6 +71,17 @@ static int inpInt(Mode mode, char *fmt, ...) {
     return inp;
 }
 
+static double inpDouble(Mode mode, char *fmt, ...) {
+    double inp;
+    va_list args;
+    va_start(args, fmt);
+    vprintf(fmt, args);
+    scanf(" %lf", &inp);
+    debug(mode, "inpDouble: inp: %lf\n", inp);
+    va_end(args);
+    return inp;
+}
+
 static char *funcTToStr(FuncT funcT) {
     unsigned nMaxChars = 32;
     char *str = fmalloc(nMaxChars * sizeof(char));
@@ -108,7 +124,7 @@ static FuncT inpFuncT() {
     char resp;
     printf(
         "Enter function type ('s' - sine, 'c' - cosine, 'l' - "
-        "logarithmic, 'e' - exponential, 'p' - polynomial): ");
+        "logarithmic, \n\t'e' - exponential, 'p' - polynomial): ");
     scanf(" %c", &resp);
     while (resp != 's' && resp != 'c' && resp != 'l' && resp != 'e' &&
            resp != 'p') {
@@ -120,49 +136,61 @@ static FuncT inpFuncT() {
 
 static De *initDe(Mode mode) {
     int i;
+    double delta = 0.000001;
     De *de = fmalloc(sizeof(De));
     de->n = inpInt(mode, "Enter n: ");
     while (de->n < 2) {
         de->n = inpInt(mode, "N can not be less than 2, try again: ");
     }
-    de->coefs = fmalloc((unsigned)(de->n) * sizeof(int));
-    de->types = fmalloc((unsigned)(de->n) * sizeof(FuncT));
+    de->funcs = fmalloc((unsigned)(de->n) * sizeof(Func));
     printf(
         "Differential equation is in this form: \n\tc0 * y' = c1 * y + "
         "P(x)\n\tP(x) = c2 * f(x) + c3 * g(x) + c4 * h(x) + …\n");
     for (i = 0; i < de->n; ++i) {
-        de->coefs[i] = inpInt(mode, "Enter coefficient c%d: ", i);
-        while (i <= 1 && de->coefs[i] == 0) {
-            de->coefs[i] =
-                inpInt(mode, "c0 and c1 can not be zero, try again: ");
+        double coef = inpDouble(mode, "Enter coefficient c%d: ", i);
+        while (i <= 1 && coef < delta && coef > -delta) {
+            coef = inpDouble(mode, "c0 and c1 can not be zero, try again: ");
         }
+        de->funcs[i].coef = coef;
         if (i > 1) {
-            de->types[i] = inpFuncT();
+            de->funcs[i].type = inpFuncT();
+            de->funcs[i].w =
+                inpDouble(mode, "Enter w value (ex: A * cos(wt) or x ^ w): ");
         }
     }
-    printf("Enter independent variable (x) value: ");
-    scanf(" %lf", &(de->t));
+    for (i = 0; i < 2; ++i) {
+        de->funcs[i].type = FuncTNull;
+        de->funcs[i].w = FuncTNull;
+    }
+    de->t = inpDouble(mode, "Enter independent variable (x) value: ");
     return de;
+}
+
+static void debugFunc(Func *func, int i, Mode mode) {
+    debug(mode, "\t\t%d: ", i);
+    if (func->type == FuncTNull) {
+        debug(mode, "{coef: %lf, type: null, w: null}\n", func->coef);
+    } else {
+        char *asStr = funcTToStr(func->type);
+        debug(mode, "{coef: %lf, type: %s, w: %lf}\n", func->coef, asStr,
+              func->w);
+        free(asStr);
+    }
 }
 
 static void debugDe(De *de, Mode mode) {
     int i;
     debug(mode, "debugDe: de: \n");
     debug(mode, "\tn: %d\n", de->n);
+    debug(mode, "\tfuncs:\n");
     for (i = 0; i < de->n; ++i) {
-        debug(mode, "\tcoefs[%d]: %d\n", i, de->coefs[i]);
-    }
-    for (i = 2; i < de->n; ++i) {
-        char *asStr = funcTToStr(de->types[i]);
-        debug(mode, "\ttypes[%d]: %s\n", i, asStr);
-        free(asStr);
+        debugFunc(&(de->funcs[i]), i, mode);
     }
     debug(mode, "\tt: %lf\n", de->t);
 }
 
 static void freeDe(De *de) {
-    free(de->coefs);
-    free(de->types);
+    free(de->funcs);
     free(de);
 }
 
