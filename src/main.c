@@ -66,11 +66,22 @@ static De *initDe(Mode mode) {
     int i;
     De *de = fmalloc(sizeof(De));
     de->n = takeInt(mode, "Enter n: ");
-    de->coefs = fmalloc((unsigned)de->n * sizeof(int));
-    for (i = 0; i < de->n; ++i) {
-        de->coefs[i] = takeInt(mode, "Enter coefficient %d: ", i);
+    while (de->n < 2) {
+        de->n = takeInt(mode, "N can not be less than 2, try again: ");
     }
-    printf("Enter independent variable (t) value: ");
+    de->coefs = fmalloc((unsigned)de->n * sizeof(int));
+    printf(
+        "Differential equation is in this form: \n\tc0 * y’ = c1 * y + c2 * "
+        "x^(n - "
+        "2) + c3 * x^(n - 3) + c4 * x^(n - 4) + …\n");
+    for (i = 0; i < de->n; ++i) {
+        de->coefs[i] = takeInt(mode, "Enter coefficient c%d: ", i);
+        while (i <= 1 && de->coefs[i] == 0) {
+            de->coefs[i] =
+                takeInt(mode, "c0 and c1 can not be zero, try again: ");
+        }
+    }
+    printf("Enter independent variable (x) value: ");
     scanf(" %lf", &(de->t));
     return de;
 }
