@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -134,6 +135,33 @@ static FuncT inpFuncT() {
     return charToFuncT(resp);
 }
 
+static double runFunc(De *de, double arg, Mode mode) {
+    int i;
+    double sum = 0;
+    for (i = 2; i < de->n; ++i) {
+        Func f = de->funcs[i];
+        FuncT funcT = f.type;
+        double w = f.w;
+        double coef = f.coef;
+        double fOut = 0.0;
+        if (funcT == Sin) {
+            fOut = sin(w * arg);
+        } else if (funcT == Cos) {
+            fOut = cos(w * arg);
+        } else if (funcT == Log) {
+            fOut = log(w * arg);
+        } else if (funcT == Exp) {
+            fOut = exp(w * arg);
+        } else if (funcT == Pol) {
+            fOut = pow(arg, w);
+        } else {
+            fail("runFunc: funcT is in invalid state");
+        }
+        sum += coef * fOut;
+    }
+    return sum;
+}
+
 static De *initDe(Mode mode) {
     int i;
     double delta = 0.000001;
@@ -194,9 +222,12 @@ static void freeDe(De *de) {
     free(de);
 }
 
+static void solve(De *de, Mode mode) {}
+
 int main() {
     Mode mode = initMode();
     De *de = initDe(mode);
+    solve(de, mode);
     debugDe(de, mode);
     freeDe(de);
     return 0;
