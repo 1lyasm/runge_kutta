@@ -224,8 +224,8 @@ static void freeDe(De *de) {
     free(de);
 }
 
-static void printApprox(double t, double y) {
-    printf("Appoximation at time %lf: %lf\n", t, y);
+static void printApprox(double t, double y, int i) {
+    printf("Iteration %d, time %lf: %lf\n", i, t, y);
 }
 
 static void solve(De *de, Mode mode) {
@@ -236,16 +236,18 @@ static void solve(De *de, Mode mode) {
     double k2;
     double k3;
     double k4;
+    int nIter = 0;
     while (t + stepSize < de->t) {
-        printApprox(t, y);
+        printApprox(t, y, nIter);
         k1 = runFunc(de, t, y, mode);
         k2 = runFunc(de, t + stepSize / 2, y + stepSize * k1 / 2, mode);
         k3 = runFunc(de, t + stepSize / 2, y + stepSize * k2 / 2, mode);
         k4 = runFunc(de, t + stepSize, y + stepSize * k3, mode);
         y += (stepSize / 6) * (k1 + 2 * k2 + 2 * k3 + k4);
         t += stepSize;
+        ++nIter;
     }
-    printApprox(t, y);
+    printApprox(t, y, nIter);
 }
 
 int main() {
