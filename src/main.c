@@ -18,6 +18,7 @@ typedef struct {
     Func *funcs;
     int n;
     double t;
+    double y0;
 } De;
 
 static void debug(Mode mode, const char *fmt, ...) {
@@ -135,9 +136,9 @@ static FuncT inpFuncT() {
     return charToFuncT(resp);
 }
 
-static double runFunc(De *de, double arg, Mode mode) {
+static double runFunc(De *de, double x, double y, Mode mode) {
     int i;
-    double sum = 0;
+    double sum = de->funcs[1].coef * y;
     for (i = 2; i < de->n; ++i) {
         Func f = de->funcs[i];
         FuncT funcT = f.type;
@@ -145,21 +146,21 @@ static double runFunc(De *de, double arg, Mode mode) {
         double coef = f.coef;
         double fOut = 0.0;
         if (funcT == Sin) {
-            fOut = sin(w * arg);
+            fOut = sin(w * x);
         } else if (funcT == Cos) {
-            fOut = cos(w * arg);
+            fOut = cos(w * x);
         } else if (funcT == Log) {
-            fOut = log(w * arg);
+            fOut = log(w * x);
         } else if (funcT == Exp) {
-            fOut = exp(w * arg);
+            fOut = exp(w * x);
         } else if (funcT == Pol) {
-            fOut = pow(arg, w);
+            fOut = pow(x, w);
         } else {
             fail("runFunc: funcT is in invalid state");
         }
         sum += coef * fOut;
     }
-    return sum;
+    return sum / de->funcs[0].coef;
 }
 
 static De *initDe(Mode mode) {
@@ -183,7 +184,7 @@ static De *initDe(Mode mode) {
         if (i > 1) {
             de->funcs[i].type = inpFuncT();
             de->funcs[i].w =
-                inpDouble(mode, "Enter w value (ex: A * cos(wt) or x ^ w): ");
+                inpDouble(mode, "Enter w value (ex: A * cos(wx) or x ^ w): ");
         }
     }
     for (i = 0; i < 2; ++i) {
@@ -191,6 +192,7 @@ static De *initDe(Mode mode) {
         de->funcs[i].w = FuncTNull;
     }
     de->t = inpDouble(mode, "Enter independent variable (x) value: ");
+    de->y0 = inpDouble(mode, "Enter initial condition y0 = y(t0): ");
     return de;
 }
 
@@ -222,13 +224,35 @@ static void freeDe(De *de) {
     free(de);
 }
 
-static void solve(De *de, Mode mode) {}
+static void printApprox(double t, double y) {
+    printf("Appoximation at time %lf: %lf\n", t, y);
+}
+
+static void solve(De *de, Mode mode) {
+    double stepSize = 0.025;
+    double y = de->y0;
+    double t = 0;
+    double k1;
+    double k2;
+    double k3;
+    double k4;
+    while (t + stepSize < de->t) {
+        printApprox(t, y);
+        k1 = runFunc(de, t, y, mode);
+        k2 = runFunc(de, t + stepSize / 2, y + stepSize * k1 / 2, mode);
+        k3 = runFunc(de, t + stepSize / 2, y + stepSize * k2 / 2, mode);
+        k4 = runFunc(de, t + stepSize, y + stepSize * k3, mode);
+        y += (stepSize / 6) * (k1 + 2 * k2 + 2 * k3 + k4);
+        t += stepSize;
+    }
+    printApprox(t, y);
+}
 
 int main() {
     Mode mode = initMode();
     De *de = initDe(mode);
-    solve(de, mode);
     debugDe(de, mode);
+    solve(de, mode);
     freeDe(de);
     return 0;
 }
