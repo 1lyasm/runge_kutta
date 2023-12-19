@@ -136,7 +136,7 @@ static FuncT inpFuncT() {
     return charToFuncT(resp);
 }
 
-static double runFunc(De *de, double x, double y, Mode mode) {
+static double runFunc(De *de, double x, double y) {
     int i;
     double sum = de->funcs[1].coef * y;
     for (i = 2; i < de->n; ++i) {
@@ -228,7 +228,7 @@ static void printApprox(double t, double y, int i) {
     printf("Iteration %d, time %lf: %lf\n", i, t, y);
 }
 
-static void solve(De *de, Mode mode) {
+static void solve(De *de) {
     double stepSize = 0.025;
     double y = de->y0;
     double t = 0;
@@ -237,12 +237,13 @@ static void solve(De *de, Mode mode) {
     double k3;
     double k4;
     int nIter = 0;
-    while (t + stepSize < de->t) {
+    double delta = 0.000001;
+    while (t + stepSize <= de->t + delta) {
         printApprox(t, y, nIter);
-        k1 = runFunc(de, t, y, mode);
-        k2 = runFunc(de, t + stepSize / 2, y + stepSize * k1 / 2, mode);
-        k3 = runFunc(de, t + stepSize / 2, y + stepSize * k2 / 2, mode);
-        k4 = runFunc(de, t + stepSize, y + stepSize * k3, mode);
+        k1 = runFunc(de, t, y);
+        k2 = runFunc(de, t + stepSize / 2, y + stepSize * k1 / 2);
+        k3 = runFunc(de, t + stepSize / 2, y + stepSize * k2 / 2);
+        k4 = runFunc(de, t + stepSize, y + stepSize * k3);
         y += (stepSize / 6) * (k1 + 2 * k2 + 2 * k3 + k4);
         t += stepSize;
         ++nIter;
@@ -254,7 +255,7 @@ int main() {
     Mode mode = initMode();
     De *de = initDe(mode);
     debugDe(de, mode);
-    solve(de, mode);
+    solve(de);
     freeDe(de);
     return 0;
 }
